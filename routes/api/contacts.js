@@ -9,7 +9,20 @@ const router = express.Router();
 router.get("/", auth, async (req, res, next) => {
   try {
     const { _id: owner } = req.user; // ID utilizator autentificat
-    const contacts = await Contact.find({ owner }); // filtrează contactele dupa owner
+    const { page = 1, limit = 20, favorite } = req.query; // extrage query
+
+    const skip = (page - 1) * limit; // de unde incepe paginarea
+
+    // filtru pt query `favorite`
+    const filter = { owner };
+    if (favorite !== undefined) {
+      filter.favorite = favorite === "true";
+    }
+
+    const contacts = await Contact.find(filter)
+      .skip(skip)
+      .limit(Number(limit)); // paginare
+
     res.status(200).json(contacts);
   } catch (error) {
     next(error);

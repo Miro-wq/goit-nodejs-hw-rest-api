@@ -16,6 +16,41 @@ const userSchema = Joi.object({
   password: Joi.string().min(6).required(),
 });
 
+// validare cu Joi pt actualizare subscriere
+const subscriptionSchema = Joi.object({
+  subscription: Joi.string().valid("starter", "pro", "business").required(),
+});
+
+// PATCH /users/subscription
+router.patch("/", auth, async (req, res, next) => {
+  try {
+    const { error } = subscriptionSchema.validate(req.body);
+    if (error) {
+      return res.status(400).json({ message: error.details[0].message });
+    }
+
+    const { _id } = req.user; // ID utilizator autentificat
+    const { subscription } = req.body;
+
+    const updatedUser = await User.findByIdAndUpdate(
+      _id,
+      { subscription },
+      { new: true } // return utilizator actualizat
+    );
+
+    if (!updatedUser) {
+      return res.status(404).json({ message: "Not found" });
+    }
+
+    res.status(200).json({
+      email: updatedUser.email,
+      subscription: updatedUser.subscription,
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
 // GET /users/current - obtine datele pt utilizatorul curent
 router.get("/current", auth, async (req, res, next) => {
   try {
