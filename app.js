@@ -4,6 +4,7 @@ const cors = require("cors");
 const contactsRouter = require("./routes/api/contacts");
 const usersRouter = require("./routes/api/users");
 const auth = require("./middlewares/auth"); // middleware pt autentificare
+const path = require("path");
 
 const app = express();
 
@@ -29,5 +30,7 @@ app.use((req, res) => {
 app.use((err, req, res, next) => {
   res.status(500).json({ message: err.message });
 });
+
+app.use("/avatars", express.static(path.join(__dirname, "public/avatars"))); // ruta pt fisierele de avatar
 
 module.exports = app;

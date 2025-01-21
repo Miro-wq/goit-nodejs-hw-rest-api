@@ -3,10 +3,17 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const Joi = require("joi");
 const auth = require("../../middlewares/auth"); // middleware pt autentificare
+const upload = require("../../middlewares/upload"); // middleware pt upload
+const fs = require("fs/promises");
 const User = require("../../models/user"); // modelul User
 require("dotenv").config();
+const gravatar = require("gravatar");
+const path = require("path");
+const Jimp = require("jimp");
 
 const router = express.Router();
+
+const avatarsDir = path.join(__dirname, "../../public/avatars");
 
 const { SECRET_KEY } = process.env; // cheie pt JWT
 
@@ -51,6 +58,32 @@ router.patch("/", auth, async (req, res, next) => {
   }
 });
 
+// PATCH /users/avatars
+router.patch("/avatars", auth, upload.single("avatar"), async (req, res, next) => {
+  try {
+    const { _id } = req.user;
+    const { path: tempPath, originalname } = req.file;
+
+    // nume unic pentru avatar
+    const filename = `${_id}-${Date.now()}-${originalname}`;
+    const resultPath = path.join(avatarsDir, filename);
+
+    // jimp
+    const image = await Jimp.read(tempPath);
+    await image.resize(250, 250).writeAsync(resultPath);
+    await fs.unlink(tempPath);
+
+    const avatarURL = `/avatars/${filename}`;
+    await User.findByIdAndUpdate(_id, { avatarURL });
+
+    res.status(200).json({ avatarURL });
+  } catch (error) {
+    next(error);
+  }
+});
+
+
+
 // GET /users/current - obtine datele pt utilizatorul curent
 router.get("/current", auth, async (req, res, next) => {
   try {
@@ -78,6 +111,8 @@ router.post("/signup", async (req, res, next) => {
       return res.status(409).json({ message: "Email in use" });
     }
 
+    const avatarURL = gravatar.url(email, { s: "250", d: "retro" }, true);
+
     // criptare parola
     const hashedPassword = await bcrypt.hash(password, 10);
 
@@ -85,6 +120,7 @@ router.post("/signup", async (req, res, next) => {
     const newUser = await User.create({
       email,
       password: hashedPassword,
+      avatarURL,
     });
 
     // raspuns de succes
@@ -92,6 +128,7 @@ router.post("/signup", async (req, res, next) => {
       user: {
         email: newUser.email,
         subscription: newUser.subscription,
+        avatarURL: newUser.avatarURL,
       },
     });
   } catch (error) {
