@@ -10,6 +10,8 @@ require("dotenv").config();
 const gravatar = require("gravatar");
 const path = require("path");
 const Jimp = require("jimp");
+const { v4: uuidv4 } = require("uuid");
+const sendEmail = require("../../helpers/sendEmail");
 
 const router = express.Router();
 
@@ -27,6 +29,32 @@ const userSchema = Joi.object({
 const subscriptionSchema = Joi.object({
   subscription: Joi.string().valid("starter", "pro", "business").required(),
 });
+
+// pt validare body
+const resendEmailSchema = Joi.object({
+  email: Joi.string().email().required(),
+});
+
+
+// GET /users/verify/:verificationToken
+router.get("/verify/:verificationToken", async (req, res, next) => {
+  try {
+    const { verificationToken } = req.params;
+    const user = await User.findOne({ verificationToken });
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    user.verificationToken = undefined ;
+    user.verify = true;
+    await user.save({validateBeforeSave: false});
+
+    res.status(200).json({ message: "Verification successful" });
+  } catch (error) {
+    next(error);
+  }
+});
+
 
 // PATCH /users/subscription
 router.patch("/", auth, async (req, res, next) => {
@@ -57,6 +85,7 @@ router.patch("/", auth, async (req, res, next) => {
     next(error);
   }
 });
+
 
 // PATCH /users/avatars
 router.patch("/avatars", auth, upload.single("avatar"), async (req, res, next) => {
@@ -94,10 +123,10 @@ router.get("/current", auth, async (req, res, next) => {
   }
 });
 
+
 // POST /users/signup
 router.post("/signup", async (req, res, next) => {
   try {
-    // valid body
     const { error } = userSchema.validate(req.body);
     if (error) {
       return res.status(400).json({ message: error.details[0].message });
@@ -112,16 +141,26 @@ router.post("/signup", async (req, res, next) => {
     }
 
     const avatarURL = gravatar.url(email, { s: "250", d: "retro" }, true);
-
-    // criptare parola
     const hashedPassword = await bcrypt.hash(password, 10);
+    const verificationToken = uuidv4(); // token unic
 
     // creare utilizator nou
     const newUser = await User.create({
       email,
       password: hashedPassword,
       avatarURL,
+      verificationToken, // token de verificare
     });
+
+    // trimite email de verificare
+    const verificationLink = `http://localhost:3000/api/users/verify/${verificationToken}`;
+    const emailContent = {
+      to: email,
+      subject: "Please verify your email",
+      html: `<p>Welcome! Please verify your email by clicking <a href="${verificationLink}">here</a>.</p>`,
+    };
+
+    await sendEmail(emailContent);
 
     // raspuns de succes
     res.status(201).json({
@@ -135,6 +174,46 @@ router.post("/signup", async (req, res, next) => {
     next(error);
   }
 });
+
+
+// POST /users/verify
+router.post("/verify", async (req, res, next) => {
+  try {
+    const { error } = resendEmailSchema.validate(req.body);
+    if (error) {
+      return res.status(400).json({ message: "Missing required field email" });
+    }
+
+    const { email } = req.body;
+
+    // verifica utilizatorul dupa email
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // verifica daca utilizatorul este deja verificat
+    if (user.verify) {
+      return res.status(400).json({ message: "Verification has already been passed" });
+    }
+
+    // trimite email de verificare
+    const verificationLink = `http://localhost:3000/api/users/verify/${user.verificationToken}`;
+    const emailContent = {
+      to: email,
+      subject: "Verify your email - Resend",
+      html: `<p>We noticed you haven't verified your email yet. Please verify it by clicking <a href="${verificationLink}">here</a>.</p>`,
+    };
+
+    // trimite email
+    await sendEmail(emailContent);
+
+    res.status(200).json({ message: "Verification email sent" });
+  } catch (error) {
+    next(error);
+  }
+});
+
 
 // POST /users/login
 router.post("/login", async (req, res, next) => {
@@ -179,6 +258,7 @@ router.post("/login", async (req, res, next) => {
     next(error);
   }
 });
+
 
 // POST /users/logout
 router.post("/logout", auth, async (req, res, next) => {
