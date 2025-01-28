@@ -55,6 +55,8 @@ SENDGRID_API_KEY=your_sendgrid_api_key
 
 The server will run on http://localhost:3000.
 
+---
+
 ## **Running with Docker**
 
 1. Build the Docker image
@@ -78,8 +80,10 @@ Or use a .env file:
 docker run -p 3000:3000 --env-file .env nodejs-app
 ```
 
-# API Documentation
-## Authentication
+---
+
+## **API Documentation**
+# **Authentication**
 
 **Signup**
 - POST `/api/users/signup`
@@ -175,4 +179,5 @@ Delete Contact
 │   └── sendEmail.js
 ```
 License
+
 This project is licensed under the MIT License.
