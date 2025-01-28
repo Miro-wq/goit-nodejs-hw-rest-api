@@ -135,6 +135,7 @@ docker run -p 3000:3000 --env-file .env nodejs-app
 ```
 
 **Contacts**
+
 Get All Contacts
 - GET `/api/contacts`
 Create a Contact
@@ -153,7 +154,7 @@ Update Contact
 Delete Contact
 - DELETE `/api/contacts/:contactId`
 
-##Folder Structure##
+## **Folder Structure**
 ```plaintext
 .
 ├── Dockerfile
