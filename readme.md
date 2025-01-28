@@ -29,10 +29,10 @@ Make sure you have the following installed:
 ## **Installation**
 
 1. Clone this repository:
-   ```bash
-   git clone https://github.com/<your-username>/<your-repo>.git
-   cd <your-repo>
-   ```
+```bash
+git clone https://github.com/<your-username>/<your-repo>.git
+cd <your-repo>
+```
 
 2. Install dependencies:
 ```bash
