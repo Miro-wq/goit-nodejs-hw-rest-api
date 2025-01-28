@@ -158,6 +158,8 @@ Update Contact
 Delete Contact
 - DELETE `/api/contacts/:contactId`
 
+---
+
 ## **Folder Structure**
 ```plaintext
 .
