@@ -55,7 +55,7 @@ SENDGRID_API_KEY=your_sendgrid_api_key
 
 The server will run on http://localhost:3000.
 
-# Running with Docker
+## **Running with Docker**
 
 1. Build the Docker image
 ```bash
