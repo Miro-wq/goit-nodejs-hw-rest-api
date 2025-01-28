@@ -83,7 +83,7 @@ docker run -p 3000:3000 --env-file .env nodejs-app
 ---
 
 ## **API Documentation**
-# **Authentication**
+### **Authentication**
 
 **Signup**
 - POST `/api/users/signup`
